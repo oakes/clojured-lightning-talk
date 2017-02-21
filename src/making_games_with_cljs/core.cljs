@@ -2,12 +2,10 @@
   (:require [play-cljs.core :as p]
             [making-games-with-cljs.state :as s]
             [making-games-with-cljs.utils :as u]
-            [making-games-with-cljs.time-travel :as tt]
             [goog.events :as events]))
 
 (defonce game (p/create-game u/view-size u/view-size))
 (defonce state (atom nil))
-(defonce paused? (atom false))
 
 (defn smiley []
   [:fill {:color "yellow"}
@@ -68,38 +66,29 @@ arc(50, 55, 60, 60, 0, 3.14);"
     []
     (reverse raw-slides)))
 
-(defn on-key-down [^js/KeyboardEvent event]
-  (when (= (.-keyCode event) 80)
-    (swap! paused? not)))
-
 (def main-screen
   (reify p/Screen
     (on-show [_]
       (when-not @state
-        (events/listen js/window "keydown" on-key-down)
         (reset! state (s/initial-state game))))
     (on-hide [_])
     (on-render [_]
       (let [{:keys [x y current]} @state]
         (p/render game [[:stroke {}
-                         [:fill {:color (if @paused? "gray" "lightblue")}
+                         [:fill {:color "lightblue"}
                           [:rect {:width u/view-size :height u/view-size}]]]
                         [:tiled-map {:value (:map @state) :x x}]
                         [:div {:x (- (+ x 350)) :y 100}
                          slides]
                         [:div {:x u/koala-offset :y y}
                          current]]))
-      (when-not @paused?
-        (reset! state
-          (or (tt/rewind game 1)
-              (-> @state
-                  (s/move game)
-                  (s/prevent-move game)
-                  (s/animate))))))))
+      (reset! state
+        (-> @state
+            (s/move game)
+            (s/prevent-move game)
+            (s/animate))))))
 
 (doto game
   (p/start)
   (p/set-screen main-screen))
-
-(tt/start-recording state)
 
