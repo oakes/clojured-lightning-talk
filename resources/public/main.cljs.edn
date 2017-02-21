@@ -1,3 +1,0 @@
-{:require  [making-games-with-cljs.core]
- :init-fns []
- :compiler-options {:infer-externs true}}
